@@ -1,25 +1,48 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { EventsController } from './events.controller';
+import { AppController } from '@/app.controller';
+import { AppService } from '@/app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Event } from './event.entity';
+import { EventsModule } from '@/events/events.module';
+import { AppJapanService } from '@/app.japan.service';
+import { AppDummy } from '@/app.dummy';
+import { ConfigModule } from '@nestjs/config';
+import ormConfig from '@/config/orm.config';
+import ormConfigProd from '@/config/orm.config.prod';
+import { SchoolModule } from '@/school/school.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: '127.0.0.1',
-      port: 3306,
-      username: 'root',
-      password: 'eventsdbroot',
-      database: 'events',
-      entities: [Event],
-      synchronize: true, // Only for development
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [ormConfig], // 👈 Load the ormConfig
+      expandVariables: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory:
+        process.env.NODE_ENV !== 'production' ? ormConfig : ormConfigProd, // 👈 Use the factory function
     }), // 👈 Add this to tell TypeOrmModule to connect to the database
-    TypeOrmModule.forFeature([Event]), // 👈 Add this to tell TypeOrmModule that the Event entity is registered in the current scope
+    EventsModule,
+    SchoolModule,
   ],
-  controllers: [AppController, EventsController],
-  providers: [AppService],
+  controllers: [AppController],
+  providers: [
+    AppDummy,
+    // 👇 Class Provider
+    {
+      provide: AppService,
+      useClass: AppJapanService,
+    },
+    // 👇 Value Provider
+    {
+      provide: 'APP_NAME',
+      useValue: 'Event Management',
+    },
+    // 👇 Factory Provider
+    {
+      provide: 'MESSAGE',
+      inject: [AppDummy],
+      useFactory: (app) => `${app.dummy()}`,
+    },
+  ],
 })
 export class AppModule {}
