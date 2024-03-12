@@ -9,4 +9,5 @@ export enum EventWhenEnum {
 
 export class ListEvents {
   when?: EventWhenEnum = EventWhenEnum.ALL;
+  page: number = 1;
 }

@@ -4,6 +4,7 @@ import { Event } from './event.entity';
 import { Injectable, Logger } from '@nestjs/common';
 import { AttendeeAnswerEnum } from '@/attendees/attendee.entity';
 import { EventWhenEnum, ListEvents } from './dtos/list.events';
+import { PaginateOptions, paginate } from '@/pagination/paginator';
 
 @Injectable()
 export class EventsService {
@@ -51,11 +52,11 @@ export class EventsService {
       );
   }
 
-  public async getEventsWithAttendeeCountFilteredByWhen(filter?: ListEvents) {
+  private async getEventsWithAttendeeCountFilteredByWhen(filter?: ListEvents) {
     let query = await this.getEventsWithAttendeesCountQuery();
 
     if (!filter) {
-      return await query.getMany();
+      return query;
     }
 
     if (filter.when == EventWhenEnum.TODAY) {
@@ -89,7 +90,17 @@ export class EventsService {
       );
     }
 
-    return await query.getMany();
+    return query;
+  }
+
+  public async getEventsWithAttendeeCountFilteredByWhenPaginated(
+    filter: ListEvents,
+    paginateOptions: PaginateOptions,
+  ) {
+    return await paginate(
+      await this.getEventsWithAttendeeCountFilteredByWhen(filter),
+      paginateOptions,
+    );
   }
 
   public async getEvent(id: number): Promise<Event | null> {

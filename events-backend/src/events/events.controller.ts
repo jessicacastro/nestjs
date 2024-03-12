@@ -11,6 +11,8 @@ import {
   Patch,
   Post,
   Query,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -22,7 +24,7 @@ import { EventsService } from './events.service';
 
 import { CreateEventDTO } from './dtos/create-event.dto';
 import { UpdateEventDTO } from './dtos/update-event.dto';
-import { EventWhenEnum, ListEvents } from './dtos/list.events';
+import { ListEvents } from './dtos/list.events';
 
 @Controller('/events')
 export class EventsController {
@@ -81,12 +83,17 @@ export class EventsController {
   // }
 
   @Get()
-  async findAllEvents(@Query() filter: ListEvents): Promise<Event[]> {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllEvents(@Query() filter: ListEvents) {
     const events =
-      await this.eventsService.getEventsWithAttendeeCountFilteredByWhen(filter);
-    this.logger.debug(
-      `Found ${events.length} events with the given filter: ${JSON.stringify(EventWhenEnum[filter.when])}`,
-    );
+      await this.eventsService.getEventsWithAttendeeCountFilteredByWhenPaginated(
+        filter,
+        {
+          total: true,
+          currentPage: filter.page,
+          limit: 2,
+        },
+      );
 
     return events;
   }
